@@ -14,15 +14,16 @@ app.use(express.static(path.join(__dirname)));
 // -------------------------------------------------------------------
 function getLocalIpAddress() {
     const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
+    for (const name in interfaces) {
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
                 return iface.address;
             }
         }
     }
-    return '取得失敗: ローカルIPが見つかりません';
+    return '取得失敗';
 }
+
 
 // -------------------------------------------------------------------
 // 💡 グローバルIPアドレスを取得する関数（任意）
