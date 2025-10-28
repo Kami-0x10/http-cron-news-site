@@ -2,35 +2,12 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const { exec } = require('child_process');
-const { execSync } = require('child_process');
 
 const app = express();
 const PORT = 80;
 
 // 公開する静的ファイルのディレクトリ（このファイルと同じ場所）
 app.use(express.static(path.join(__dirname)));
-
-
-function getLocalIpFromIpconfig() {
-    try {
-        const output = execSync('ipconfig', { encoding: 'utf8' });
-        const lines = output.split('\n');
-        for (const line of lines) {
-            if (line.includes('IPv4 アドレス') || line.includes('IPv4 Address')) {
-                const match = line.match(/(\d{1,3}\.){3}\d{1,3}/);
-                if (match) {
-                    return match[0];
-                }
-            }
-        }
-    } catch (err) {
-        console.error('ipconfig 実行エラー:', err.message);
-    }
-    return '取得失敗: ipconfig からIPが見つかりません';
-}
-
-
-
 // -------------------------------------------------------------------
 // 💡 グローバルIPアドレスを取得（参考情報）
 // -------------------------------------------------------------------
@@ -50,7 +27,7 @@ function getGlobalIpAddressByCurl() {
 // サーバー起動（0.0.0.0 にバインドして外部アクセス可能に）
 // -------------------------------------------------------------------
 app.listen(PORT, '0.0.0.0', async () => {
-    const localIp = getLocalIpFromIpconfig();
+    const localIp = '192.168.0.24'; 
     const globalIp = await getGlobalIpAddressByCurl();
 
     console.log(`\n======================================================`);
