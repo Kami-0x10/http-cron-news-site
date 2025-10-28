@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const { exec } = require('child_process');
+const { execSync } = require('child_process');
 
 const app = express();
 const PORT = 80;
@@ -9,33 +10,25 @@ const PORT = 80;
 // 公開する静的ファイルのディレクトリ（このファイルと同じ場所）
 app.use(express.static(path.join(__dirname)));
 
-// -------------------------------------------------------------------
-// 💡 ローカルIPアドレスを取得（LAN内アクセス用）
-// -------------------------------------------------------------------
-function getLocalIpAddress() {
-    const interfaces = os.networkInterfaces();
-    const candidates = [];
 
-    for (const name in interfaces) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                candidates.push(iface.address);
+function getLocalIpFromIpconfig() {
+    try {
+        const output = execSync('ipconfig', { encoding: 'utf8' });
+        const lines = output.split('\n');
+        for (const line of lines) {
+            if (line.includes('IPv4 アドレス') || line.includes('IPv4 Address')) {
+                const match = line.match(/(\d{1,3}\.){3}\d{1,3}/);
+                if (match) {
+                    return match[0];
+                }
             }
         }
+    } catch (err) {
+        console.error('ipconfig 実行エラー:', err.message);
     }
-
-    // 優先的に 192.168.x.x → 10.x.x.x → 172.x.x.x を選ぶ
-    const preferred = candidates.find(ip => ip.startsWith('192.168.'));
-    if (preferred) return preferred;
-
-    const fallback10 = candidates.find(ip => ip.startsWith('10.'));
-    if (fallback10) return fallback10;
-
-    const fallback172 = candidates.find(ip => ip.startsWith('172.'));
-    if (fallback172) return fallback172;
-
-    return candidates[0] || '取得失敗: ローカルIPが見つかりません';
+    return '取得失敗: ipconfig からIPが見つかりません';
 }
+
 
 
 // -------------------------------------------------------------------
@@ -57,7 +50,7 @@ function getGlobalIpAddressByCurl() {
 // サーバー起動（0.0.0.0 にバインドして外部アクセス可能に）
 // -------------------------------------------------------------------
 app.listen(PORT, '0.0.0.0', async () => {
-    const localIp = getLocalIpAddress();
+    const localIp = getLocalIpFromIpconfig();
     const globalIp = await getGlobalIpAddressByCurl();
 
     console.log(`\n======================================================`);
