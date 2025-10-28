@@ -14,23 +14,29 @@ app.use(express.static(path.join(__dirname)));
 // -------------------------------------------------------------------
 function getLocalIpAddress() {
     const interfaces = os.networkInterfaces();
+    const candidates = [];
+
     for (const name in interfaces) {
         for (const iface of interfaces[name]) {
-            if (
-                iface.family === 'IPv4' &&
-                !iface.internal &&
-                (
-                    iface.address.startsWith('192.168.') ||
-                    iface.address.startsWith('10.') ||
-                    iface.address.startsWith('172.')
-                )
-            ) {
-                return iface.address;
+            if (iface.family === 'IPv4' && !iface.internal) {
+                candidates.push(iface.address);
             }
         }
     }
-    return '取得失敗: 適切なローカルIPが見つかりません';
+
+    // 優先的に 192.168.x.x → 10.x.x.x → 172.x.x.x を選ぶ
+    const preferred = candidates.find(ip => ip.startsWith('192.168.'));
+    if (preferred) return preferred;
+
+    const fallback10 = candidates.find(ip => ip.startsWith('10.'));
+    if (fallback10) return fallback10;
+
+    const fallback172 = candidates.find(ip => ip.startsWith('172.'));
+    if (fallback172) return fallback172;
+
+    return candidates[0] || '取得失敗: ローカルIPが見つかりません';
 }
+
 
 // -------------------------------------------------------------------
 // 💡 グローバルIPアドレスを取得（参考情報）
